@@ -50,11 +50,63 @@ it. The HTML overlay always draws on top, never occluded. For a flat
 billboard card with nothing in front of it, RFD 0073's actual scene
 today, that difference does not show.
 
+## Update: SlugHorn/WASM prototyped and working
+
+The Godot-portability requirement settled the choice DETAILS.md's first
+half described as open: SlugHorn over the HTML overlay, because the DOM
+overlay cannot port to Godot at all, and SlugHorn's core has no
+browser-only dependency baked in.
+
+`prototype/slughorn-wasm-poc/` proves the pipeline, not just the plan:
+
+- `third_party/slughorn` vendored via `git subtree` (squashed onto its own
+  commit, `main` at the time of vendoring).
+- SlugHorn's core `slughorn` CMake target builds clean under Emscripten
+  6.0.6 (`prototype/slughorn-wasm-harness/`), confirmed by inspecting the
+  compiled object: a genuine `WebAssembly (wasm) binary version 0x1`.
+- `binding.cpp` hand-authors one shape (a five-point star, since font
+  loading is not wired up yet) through SlugHorn's own `Atlas::addShape()` /
+  `build()`, and exports the resulting curve/band texture bytes as plain
+  `extern "C"` functions reading directly out of wasm linear memory.
+- `index.html` uploads those bytes to WebGL2 as the RGBA32F curve texture
+  and RGBA16UI band texture SlugHorn's format expects, and renders the
+  shape with the actual Slug fragment shader (Lengyel 2017) ported
+  near-verbatim from SlugHorn's own `example/slughorn-example-glfw.cpp` —
+  not a placeholder shader, the same coverage-solve math.
+- Verified in-browser (Playwright, screenshotted): the rendered star is
+  geometrically correct, and — the entire reason this path was chosen over
+  the DOM overlay — gets properly depth-tested against a real 3D occluder
+  panel in the scene. Part of the star is visibly clipped by the panel's
+  silhouette. The HTML-overlay prototype cannot do this; it always draws
+  on top, by construction.
+
+See `prototype/slughorn-wasm-poc/README.md` for build/run instructions and
+what remains uncovered.
+
 ## Open, for the next session
 
-Which caption text to show (the dataset's own caption field, a
-shortened version, on hover only), whether every card gets a label
-or only the one on screen, and whether the smaller HTML-overlay path
-covers the real need well enough that SlugHorn stays a future
-option rather than a near-term one. Nothing here shipped or
-deployed this session.
+**Carried over from the original decision, now answerable with real
+captions once font loading lands:** which caption text to show (the
+dataset's own caption field, a shortened version, on hover only), and
+whether every card gets a label or only the one on screen. The WASM
+prototype's `binding.cpp` has no caption text yet — it renders one
+hand-authored shape, not a font glyph.
+
+**New, from getting SlugHorn actually building:**
+
+- **Real glyphs.** `SLUGHORN_FREETYPE` requires `find_package(Freetype
+  REQUIRED)`, which does not resolve against Emscripten's
+  `-sUSE_FREETYPE=1` port automatically (the port fetches/links at
+  Emscripten's own build time, not through a CMake-discoverable install).
+  Wiring FreeType into the Emscripten CMake build is the next real step
+  before any caption text — not just a hand-authored shape — can render.
+- **Multi-shape batching.** This prototype draws one shape via uniforms.
+  Six billboard cards' worth of captions in one atlas need the
+  per-instance attribute approach SlugHorn's own GLFW example already
+  demonstrates (`a_emCoord`/`a_bandXform`/`a_shapeData` as vertex
+  attributes, not uniforms).
+- **The Godot GDExtension binding.** Deferred this session by explicit
+  request ("don't touch Godot"). SlugHorn's core is the same C++20 code
+  either way; the Godot path swaps the Emscripten binding for a
+  GDExtension one around the identical `Atlas` API this prototype already
+  exercises.

@@ -1,0 +1,7 @@
+# CMake build directories (prototype/slughorn-wasm-harness, third_party/slughorn/build-wasm)
+build/
+build-wasm/
+
+# Compiled WASM output -- reproducible via prototype/slughorn-wasm-poc/build.sh
+prototype/slughorn-wasm-poc/slughorn.js
+prototype/slughorn-wasm-poc/slughorn.wasm

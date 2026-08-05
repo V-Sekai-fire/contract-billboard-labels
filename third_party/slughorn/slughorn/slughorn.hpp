@@ -59,11 +59,11 @@ inline std::string versionString() {
 using slug_t = float;
 
 namespace literals {
-	constexpr slug_t operator"" _cv(long double v) {
+	constexpr slug_t operator""_cv(long double v) {
 		return static_cast<slug_t>(v);
 	}
 
-	constexpr slug_t operator"" _cv(unsigned long long v) {
+	constexpr slug_t operator""_cv(unsigned long long v) {
 		return static_cast<slug_t>(v);
 	}
 
