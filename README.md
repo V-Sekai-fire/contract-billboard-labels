@@ -6,7 +6,8 @@ convention for a feature too large for one session. Moves back to
 `decisions/0074-3d-billboard-labels/` as a pull request once the
 open questions below settle and code exists to review.
 
-**State:** prediscussion
+**State:** decided (SlugHorn/WASM), prototype proves the pipeline; font
+loading, multi-shape batching, and the Godot GDExtension binding remain
 **Scope:** `usd_viewer_app/`, RFD 0073's gallery, in the parent repo
 
 ## Problem
@@ -19,18 +20,19 @@ gives each row a caption. Nothing shows it today.
 
 ## Decision
 
-Not decided yet. `AlphaPixel/SlugHorn`, the user's own suggestion,
-does real GPU vector-text rendering, the Slug technique, but it is a
-C++20 library with no WASM build, no browser binding, and no
-renderer of its own. Adopting it means building both a WASM target
-and a three.js-side Slug renderer first, real work, not a small
-addition. See `DETAILS.md` for that reasoning and for a much
-smaller stopgap already available today: an ordinary HTML overlay,
-positioned every frame with the camera's own projection math, no
-new WASM build, no dependency on an unfinished library.
+**`AlphaPixel/SlugHorn`, via a WASM build.** The deciding requirement,
+added after the HTML-overlay stopgap was already prototyped: the user
+wants this label technique portable to Godot, not just the browser
+client. An ordinary HTML overlay is a DOM technique; it cannot port to
+Godot at all. SlugHorn's core is plain C++20 with no browser or engine
+dependency baked in, so it is the same source compiled two ways: a WASM
+build for `usd-viewer`'s three.js scene, and (future session) a
+GDExtension binding for Godot. See `DETAILS.md` for the prototype that
+proves this path works, not just that it should.
 
-This RFD exists to pick between those two paths, or name a third,
-before any code lands, not to announce a decision already made.
+The HTML-overlay stopgap (`prototype/html-overlay-poc.html`) stays in
+the repo as the documented baseline it was built as, superseded by this
+decision rather than deleted.
 
 ## Related
 

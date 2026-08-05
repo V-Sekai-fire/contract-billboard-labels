@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RFD 0074 — HTML Overlay Label POC</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg: #0b0d12;
+    --panel: #14171f;
+    --panel-border: rgba(255,255,255,0.09);
+    --text: #e7e9ee;
+    --text-dim: #8b93a3;
+    --accent: #e8a33d;
+    --accent-dim: rgba(232,163,61,0.16);
+    --grid-line: rgba(139,147,163,0.16);
+    --warn: #e2574c;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg: #eef0f4;
+      --panel: #ffffff;
+      --panel-border: rgba(20,23,31,0.10);
+      --text: #14171f;
+      --text-dim: #5b6472;
+      --accent: #c97f1e;
+      --accent-dim: rgba(201,127,30,0.12);
+      --grid-line: rgba(20,23,31,0.10);
+      --warn: #b6392f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #0b0d12; --panel: #14171f; --panel-border: rgba(255,255,255,0.09);
+    --text: #e7e9ee; --text-dim: #8b93a3; --accent: #e8a33d; --accent-dim: rgba(232,163,61,0.16);
+    --grid-line: rgba(139,147,163,0.16); --warn: #e2574c;
+  }
+  :root[data-theme="light"]{
+    --bg: #eef0f4; --panel: #ffffff; --panel-border: rgba(20,23,31,0.10);
+    --text: #14171f; --text-dim: #5b6472; --accent: #c97f1e; --accent-dim: rgba(201,127,30,0.12);
+    --grid-line: rgba(20,23,31,0.10); --warn: #b6392f;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; margin:0; overflow:hidden; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  #stage{ position:relative; width:100%; height:100%; }
+  canvas#scene{ position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:grab; }
+  canvas#scene.dragging{ cursor:grabbing; }
+
+  #overlay{ position:absolute; inset:0; pointer-events:none; }
+
+  .label{
+    position:absolute;
+    top:0; left:0;
+    transform: translate(-50%,-100%);
+    display:flex;
+    align-items:center;
+    gap:.4em;
+    padding:.32em .6em;
+    border-radius:3px;
+    background: var(--panel);
+    border:1px solid var(--panel-border);
+    color: var(--text);
+    font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    white-space:nowrap;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.28);
+    transition: opacity .12s linear;
+  }
+  .label::before{
+    content:"";
+    width:6px; height:6px; border-radius:50%;
+    background: var(--accent);
+    flex:none;
+  }
+  .label.occluded{
+    border-color: var(--warn);
+    border-style: dashed;
+  }
+  .label .badge{
+    color: var(--warn);
+    font-size: .85em;
+  }
+  .label.hidden{ display:none; }
+
+  .hud{
+    position:absolute;
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    border:1px solid var(--panel-border);
+    border-radius:6px;
+    padding:.9rem 1rem;
+    backdrop-filter: blur(6px);
+    pointer-events:auto;
+    max-width: 300px;
+  }
+  #controls{ top:1rem; left:1rem; }
+  #legend{ bottom:1rem; right:1rem; text-align:right; }
+
+  h1{
+    font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: .95rem;
+    letter-spacing:.02em;
+    margin:0 0 .15rem;
+  }
+  .sub{
+    color: var(--text-dim);
+    font-size: .78rem;
+    line-height:1.4;
+    margin: 0 0 .8rem;
+  }
+  fieldset{
+    border:none;
+    margin:0 0 .7rem;
+    padding:0;
+  }
+  legend{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color: var(--text-dim);
+    margin-bottom:.3rem;
+    padding:0;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+    font-size:.82rem;
+    margin:.2rem 0;
+  }
+  .row input{ accent-color: var(--accent); }
+  label.opt{ cursor:pointer; }
+  #legend p{ margin:.15rem 0; font-size:.76rem; color:var(--text-dim); }
+  #legend b{ color: var(--text); font-weight:600; }
+  .note{
+    font-size:.72rem;
+    color: var(--text-dim);
+    border-top:1px solid var(--panel-border);
+    margin-top:.7rem;
+    padding-top:.6rem;
+    line-height:1.4;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene"></canvas>
+  <div id="overlay"></div>
+
+  <div class="hud" id="controls">
+    <h1>RFD 0074 — HTML overlay label POC</h1>
+    <p class="sub">Each card's anchor point is projected through the camera's view-projection matrix every frame; a plain HTML element is placed at the resulting screen coordinate. No WASM, no SlugHorn.</p>
+
+    <fieldset>
+      <legend>Caption length</legend>
+      <div class="row"><input type="radio" name="capLen" id="capFull" value="full" checked><label class="opt" for="capFull">Full caption</label></div>
+      <div class="row"><input type="radio" name="capLen" id="capShort" value="short"><label class="opt" for="capShort">Shortened</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Which cards get labels</legend>
+      <div class="row"><input type="radio" name="mode" id="modeAll" value="all" checked><label class="opt" for="modeAll">All cards</label></div>
+      <div class="row"><input type="radio" name="mode" id="modeNearest" value="nearest"><label class="opt" for="modeNearest">Nearest to camera only</label></div>
+      <div class="row"><input type="radio" name="mode" id="modeHover" value="hover"><label class="opt" for="modeHover">On hover only</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Occlusion tradeoff</legend>
+      <div class="row"><input type="checkbox" id="occluder"><label class="opt" for="occluder">Add a blocking panel in front of one card</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Camera</legend>
+      <div class="row"><input type="checkbox" id="autoRotate"><label class="opt" for="autoRotate">Auto-rotate</label></div>
+    </fieldset>
+
+    <p class="note">Cards and captions are placeholder stand-ins for RFD 0073's gallery, not real dataset rows. This tests the rendering technique from DETAILS.md, not usd-viewer's actual scene.</p>
+  </div>
+
+  <div class="hud" id="legend">
+    <p><b>Drag</b> to orbit · <b>Scroll</b> to zoom</p>
+    <p id="occNote" style="display:none;">Dashed label = overlay drawn over geometry that should block it</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- tiny mat4 (column-major) ----------
+  function perspective(fovy, aspect, near, far){
+    var f = 1/Math.tan(fovy/2);
+    var m = new Float32Array(16);
+    m[0]=f/aspect; m[5]=f; m[10]=(far+near)/(near-far); m[11]=-1;
+    m[14]=(2*far*near)/(near-far);
+    return m;
+  }
+  function sub(a,b){ return [a[0]-b[0],a[1]-b[1],a[2]-b[2]]; }
+  function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+  function dot(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+  function norm(a){ var l=Math.hypot(a[0],a[1],a[2])||1; return [a[0]/l,a[1]/l,a[2]/l]; }
+  function lookAt(eye, center, up){
+    var z = norm(sub(eye,center));
+    var x = norm(cross(up,z));
+    var y = cross(z,x);
+    return new Float32Array([
+      x[0], y[0], z[0], 0,
+      x[1], y[1], z[1], 0,
+      x[2], y[2], z[2], 0,
+      -dot(x,eye), -dot(y,eye), -dot(z,eye), 1
+    ]);
+  }
+  function multiply(a,b){
+    var out = new Float32Array(16);
+    for(var col=0; col<4; col++){
+      for(var row=0; row<4; row++){
+        var s=0;
+        for(var k=0;k<4;k++) s += a[k*4+row]*b[col*4+k];
+        out[col*4+row]=s;
+      }
+    }
+    return out;
+  }
+  function transform(m, p){
+    var x=p[0],y=p[1],z=p[2],w=1;
+    return [
+      m[0]*x+m[4]*y+m[8]*z+m[12]*w,
+      m[1]*x+m[5]*y+m[9]*z+m[13]*w,
+      m[2]*x+m[6]*y+m[10]*z+m[14]*w,
+      m[3]*x+m[7]*y+m[11]*z+m[15]*w
+    ];
+  }
+
+  // ---------- scene data ----------
+  var cards = [
+    { x:-4.2, z: 0.0, w:1.6, h:2.0, hue:210, captionFull:"A girl with silver hair stands beneath cherry blossoms, wind lifting petals across the frame.", captionShort:"Silver-haired girl, cherry blossoms" },
+    { x:-2.4, z:-0.6, w:1.6, h:2.0, hue:280, captionFull:"Two classmates share an umbrella walking home in the rain, city lights blurred behind them.", captionShort:"Classmates sharing umbrella, rain" },
+    { x:-0.6, z: 0.3, w:1.6, h:2.0, hue: 20, captionFull:"A shrine maiden kneels before a torii gate at dusk, lanterns glowing along the stone path.", captionShort:"Shrine maiden at torii gate" },
+    { x: 1.2, z:-0.4, w:1.6, h:2.0, hue:150, captionFull:"A mecha pilot studies a holographic map inside a cramped cockpit lit by warning lights.", captionShort:"Mecha pilot, cockpit holomap" },
+    { x: 3.0, z: 0.2, w:1.6, h:2.0, hue: 45, captionFull:"A cat sits on a windowsill watching snow fall over a quiet neighborhood street.", captionShort:"Cat on windowsill, snowfall" },
+    { x: 4.8, z:-0.3, w:1.6, h:2.0, hue:340, captionFull:"A swordsman rests against a bamboo grove, blade across his knees, eyes closed.", captionShort:"Swordsman resting, bamboo grove" }
+  ];
+  cards.forEach(function(c, i){
+    c.id = "c"+i;
+    c.center = [c.x, c.h/2, c.z];
+    c.corners = [
+      [c.x-c.w/2, c.h, c.z],
+      [c.x+c.w/2, c.h, c.z],
+      [c.x+c.w/2, 0,   c.z],
+      [c.x-c.w/2, 0,   c.z]
+    ];
+    c.anchor = [c.x, c.h+0.18, c.z];
+  });
+
+  var OCC_TARGET = cards[2]; // the shrine-maiden card gets the occluder in front of it
+  var occluder = {
+    x: OCC_TARGET.x, z: OCC_TARGET.z + 1.6, w: 2.2, h: 2.6,
+  };
+  occluder.corners = [
+    [occluder.x-occluder.w/2, occluder.h, occluder.z],
+    [occluder.x+occluder.w/2, occluder.h, occluder.z],
+    [occluder.x+occluder.w/2, 0,          occluder.z],
+    [occluder.x-occluder.w/2, 0,          occluder.z]
+  ];
+  occluder.center = [occluder.x, occluder.h/2, occluder.z];
+
+  // ---------- state ----------
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var state = {
+    theta: 0.35, phi: 1.15, radius: 8.5,
+    target: [0.3, 1.0, 0],
+    autoRotate: !reduceMotion,
+    captionMode: "full",
+    labelMode: "all",
+    occluderOn: false,
+    mouse: { x: -9999, y: -9999 }
+  };
+
+  var canvas = document.getElementById("scene");
+  var ctx = canvas.getContext("2d");
+  var overlay = document.getElementById("overlay");
+  var labelEls = {};
+  cards.forEach(function(c){
+    var el = document.createElement("div");
+    el.className = "label hidden";
+    el.innerHTML = '<span class="txt"></span>';
+    overlay.appendChild(el);
+    labelEls[c.id] = el;
+  });
+
+  function resize(){
+    var r = canvas.getBoundingClientRect();
+    canvas.width = r.width * devicePixelRatio;
+    canvas.height = r.height * devicePixelRatio;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ---------- controls wiring ----------
+  document.getElementById("autoRotate").checked = state.autoRotate;
+  document.getElementById("autoRotate").addEventListener("change", function(e){
+    state.autoRotate = e.target.checked;
+  });
+  document.querySelectorAll('input[name="capLen"]').forEach(function(r){
+    r.addEventListener("change", function(){ if(r.checked) state.captionMode = r.value; });
+  });
+  document.querySelectorAll('input[name="mode"]').forEach(function(r){
+    r.addEventListener("change", function(){ if(r.checked) state.labelMode = r.value; });
+  });
+  document.getElementById("occluder").addEventListener("change", function(e){
+    state.occluderOn = e.target.checked;
+    document.getElementById("occNote").style.display = e.target.checked ? "block" : "none";
+  });
+
+  var dragging = false, lastX=0, lastY=0;
+  canvas.addEventListener("pointerdown", function(e){
+    dragging = true; lastX=e.clientX; lastY=e.clientY;
+    canvas.classList.add("dragging");
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointerup", function(e){
+    dragging = false; canvas.classList.remove("dragging");
+  });
+  canvas.addEventListener("pointermove", function(e){
+    var r = canvas.getBoundingClientRect();
+    state.mouse.x = e.clientX - r.left;
+    state.mouse.y = e.clientY - r.top;
+    if(!dragging) return;
+    var dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    state.theta -= dx * 0.006;
+    state.phi = Math.min(Math.PI-0.15, Math.max(0.2, state.phi - dy * 0.006));
+  });
+  canvas.addEventListener("wheel", function(e){
+    e.preventDefault();
+    state.radius = Math.min(20, Math.max(3.5, state.radius + e.deltaY*0.01));
+  }, { passive:false });
+
+  function cameraEye(){
+    return [
+      state.target[0] + state.radius*Math.sin(state.phi)*Math.sin(state.theta),
+      state.target[1] + state.radius*Math.cos(state.phi),
+      state.target[2] + state.radius*Math.sin(state.phi)*Math.cos(state.theta)
+    ];
+  }
+
+  function project(vp, p, w, h){
+    var c = transform(vp, p);
+    if(c[3] <= 0.0001) return { visible:false };
+    var ndcX = c[0]/c[3], ndcY = c[1]/c[3];
+    return {
+      visible: true,
+      x: (ndcX*0.5+0.5) * w,
+      y: (1-(ndcY*0.5+0.5)) * h,
+      w: c[3]
+    };
+  }
+
+  function drawQuad(pts, fillStyle, strokeStyle){
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(var i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 1.5*devicePixelRatio;
+    ctx.stroke();
+  }
+
+  function frame(){
+    requestAnimationFrame(frame);
+    if(state.autoRotate) state.theta += 0.0028;
+
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    var eye = cameraEye();
+    var view = lookAt(eye, state.target, [0,1,0]);
+    var proj = perspective(50*Math.PI/180, w/h, 0.1, 100);
+    var vp = multiply(proj, view);
+
+    // floor grid
+    ctx.lineWidth = devicePixelRatio;
+    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue("--grid-line").trim() || "rgba(139,147,163,0.16)";
+    for(var g=-6; g<=6; g++){
+      var a = project(vp, [g,0,-6], w, h), b = project(vp, [g,0,6], w, h);
+      if(a.visible && b.visible){ ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+      var c1 = project(vp, [-6,0,g], w, h), d1 = project(vp, [6,0,g], w, h);
+      if(c1.visible && d1.visible){ ctx.beginPath(); ctx.moveTo(c1.x,c1.y); ctx.lineTo(d1.x,d1.y); ctx.stroke(); }
+    }
+
+    // depth-sort cards (+ occluder) far to near
+    var drawList = cards.map(function(c){ return { ref:c, kind:"card", dist: Math.hypot(eye[0]-c.center[0], eye[1]-c.center[1], eye[2]-c.center[2]) }; });
+    if(state.occluderOn){
+      drawList.push({ ref:occluder, kind:"occluder", dist: Math.hypot(eye[0]-occluder.center[0], eye[1]-occluder.center[1], eye[2]-occluder.center[2]) });
+    }
+    drawList.sort(function(a,b){ return b.dist - a.dist; });
+
+    var occluderScreen = null;
+    var cardDist = {};
+
+    drawList.forEach(function(item){
+      var obj = item.ref;
+      var pts = obj.corners.map(function(p){ return project(vp, p, w, h); });
+      if(pts.some(function(p){ return !p.visible; })) return;
+      if(item.kind === "card"){
+        var hue = obj.hue;
+        var grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[2].x, pts[2].y);
+        grad.addColorStop(0, "hsl("+hue+" 55% 42%)");
+        grad.addColorStop(1, "hsl("+hue+" 55% 24%)");
+        drawQuad(pts, grad, "rgba(255,255,255,0.35)");
+        cardDist[obj.id] = item.dist;
+      } else {
+        drawQuad(pts, "rgba(15,17,22,0.72)", "rgba(255,255,255,0.15)");
+        occluderScreen = { pts:pts, dist:item.dist };
+      }
+    });
+
+    // labels
+    var visibleCards = [];
+    cards.forEach(function(c){
+      var p = project(vp, c.anchor, w, h);
+      var dist = cardDist[c.id] != null ? cardDist[c.id] : 999;
+      if(p.visible) visibleCards.push({ c:c, p:p, dist:dist });
+    });
+
+    var nearestId = null;
+    if(visibleCards.length){
+      var nearest = visibleCards.reduce(function(a,b){ return a.dist < b.dist ? a : b; });
+      nearestId = nearest.c.id;
+    }
+
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = rect.width / w, scaleY = rect.height / h;
+
+    visibleCards.forEach(function(entry){
+      var c = entry.c, p = entry.p, dist = entry.dist;
+      var el = labelEls[c.id];
+      var sx = p.x*scaleX, sy = p.y*scaleY;
+
+      var show = true;
+      if(state.labelMode === "nearest") show = (c.id === nearestId);
+      if(state.labelMode === "hover"){
+        var mdx = state.mouse.x - sx, mdy = state.mouse.y - sy;
+        show = Math.hypot(mdx, mdy) < 70;
+      }
+
+      if(!show){ el.classList.add("hidden"); return; }
+      el.classList.remove("hidden");
+
+      var fontPx = Math.min(15, Math.max(10.5, 220/dist));
+      el.style.left = sx + "px";
+      el.style.top = (sy - 6) + "px";
+      el.style.fontSize = fontPx + "px";
+      el.style.zIndex = String(Math.round(2000 - dist*10));
+      el.querySelector(".txt").textContent = state.captionMode === "full" ? c.captionFull : c.captionShort;
+
+      var occluded = false;
+      if(state.occluderOn && occluderScreen && c.id === OCC_TARGET.id && occluderScreen.dist < dist){
+        var xs = occluderScreen.pts.map(function(pt){ return pt.x*scaleX; });
+        var ys = occluderScreen.pts.map(function(pt){ return pt.y*scaleY; });
+        var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+        var minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
+        occluded = sx>=minX && sx<=maxX && sy>=minY && sy<=maxY;
+      }
+      el.classList.toggle("occluded", occluded);
+      var existingBadge = el.querySelector(".badge");
+      if(occluded && !existingBadge){
+        var b = document.createElement("span");
+        b.className = "badge";
+        b.textContent = "⚠ not occluded";
+        el.appendChild(b);
+      } else if(!occluded && existingBadge){
+        existingBadge.remove();
+      }
+    });
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
