@@ -108,11 +108,50 @@ REQUIRED)`, which does not resolve against Emscripten's
   Emscripten's own build time, not through a CMake-discoverable install).
   Wiring FreeType into the Emscripten CMake build is the next real step
   before any caption text — not just a hand-authored shape — can render.
-- **Multi-shape batching.** This prototype draws one shape via uniforms.
-  Six billboard cards' worth of captions in one atlas need the
-  per-instance attribute approach SlugHorn's own GLFW example already
-  demonstrates (`a_emCoord`/`a_bandXform`/`a_shapeData` as vertex
-  attributes, not uniforms).
+- **Multi-shape batching, built.** `prototype/slughorn-wasm-batch-poc/`
+  extends `binding.cpp` to build one `Atlas` holding six distinct
+  hand-authored shapes (5 to 10 points each, so each is visibly
+  different, not six copies of one shape), and moves
+  `a_bandXform`/`a_shapeData`/the per-shape world position and bbox
+  from uniforms to `flat`-shaded per-vertex attributes, the same
+  layout SlugHorn's own GLFW example
+  (`a_emCoord`/`a_bandXform`/`a_shapeData`) uses. One interleaved
+  vertex buffer, one `drawElements` call, all six shapes. The WASM
+  build compiled clean under the same Emscripten 6.0.6 toolchain
+  (`docker.io/emscripten/emsdk:latest`), confirmed a genuine
+  `WebAssembly (wasm) binary version 0x1`. Verified live with
+  Playwright: six visibly distinct shapes (5 to 10 points each, six
+  different colors) render correctly, at their own positions along a
+  row, the on-page status line reads "running: 6 shapes, one draw
+  call (real WebGL2 Slug shader)," and the occluder panel correctly
+  depth-tests against them individually, the same real-occlusion
+  property the single-shape POC proved, now holding across a batch.
+- **The real integration gap, found late: this is still a standalone
+  canvas, not `usd-viewer`.** Every artifact under `prototype/` so
+  far, both the single-shape POC and the batch POC, draws into its
+  own bare `<canvas>` with hand-rolled camera math, a separate WebGL2
+  context from `usd-viewer`'s own `THREE.WebGLRenderer`. The actual
+  goal, stated plainly and only after this prototyping, is labels
+  living inside `usd-viewer`'s own scene, for a real gallery in
+  `usd-viewer`'s own style, comparable to Sketchfab or Fab.com, many
+  cards, each with its own label, not a single demo shape on its own
+  page. Grepping this repository confirms zero references to
+  `usd-viewer` anywhere outside this note; the SlugHorn work and the
+  usd-viewer integration have not been connected yet.
+
+  The path there is not a rewrite: SlugHorn's output is a curve
+  texture, a band texture, and per-shape metrics, all plain data,
+  usable from a `THREE.ShaderMaterial` + `THREE.Mesh` just as easily
+  as from raw `gl.*` calls, with the fragment shader above ported
+  in almost unchanged (GLSL ES 300 is GLSL ES 300 either way). A
+  `THREE.Mesh` is an `Object3D`, so it can enter `usd-viewer`'s own
+  scene through the same narrow, single-purpose extension point an
+  earlier, since-dropped attempt at this RFD already established:
+  one public method on the element, adding a child into the group
+  `usd-viewer` already builds for the loaded model, nothing broader.
+  Not built this session; recorded here so the next session starts
+  from the real gap, not from the standalone canvas as if it were
+  the finish line.
 - **The Godot GDExtension binding.** Deferred this session by explicit
   request ("don't touch Godot"). SlugHorn's core is the same C++20 code
   either way; the Godot path swaps the Emscripten binding for a
