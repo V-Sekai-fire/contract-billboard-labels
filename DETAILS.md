@@ -95,7 +95,7 @@ hand-authored shape, not a font glyph.
 **New, from getting SlugHorn actually building:**
 
 - **Real glyphs.** `SLUGHORN_FREETYPE` requires `find_package(Freetype
-  REQUIRED)`, which does not resolve against Emscripten's
+REQUIRED)`, which does not resolve against Emscripten's
   `-sUSE_FREETYPE=1` port automatically (the port fetches/links at
   Emscripten's own build time, not through a CMake-discoverable install).
   Wiring FreeType into the Emscripten CMake build is the next real step

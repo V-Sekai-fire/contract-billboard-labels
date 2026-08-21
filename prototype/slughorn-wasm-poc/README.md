@@ -10,6 +10,7 @@ ported to GLSL ES 300.
 ## What this does and does not cover yet
 
 **Covered:**
+
 - `third_party/slughorn` vendored via `git subtree` (squashed).
 - SlugHorn's core `slughorn` CMake target builds clean under Emscripten
   6.0.6 (see `../slughorn-wasm-harness/`).
@@ -25,6 +26,7 @@ ported to GLSL ES 300.
   HTML-overlay path (`../html-overlay-poc.html`) cannot do.
 
 **Not covered (next milestones):**
+
 - Real font glyphs. This binding hand-authors curves; it does not call
   FreeType. `SLUGHORN_FREETYPE` needs `find_package(Freetype REQUIRED)`,
   which does not resolve against Emscripten's `-sUSE_FREETYPE=1` port

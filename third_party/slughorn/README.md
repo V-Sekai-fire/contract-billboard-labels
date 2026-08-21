@@ -18,14 +18,14 @@ https://github.com/user-attachments/assets/5ca6563e-a7d3-44df-9800-beb8716efcad
 
 <div align="center">
 
-**🔨 What We're Working On** &nbsp;&nbsp;<sub>*Last updated: August 1st, 2026*</sub>
+**🔨 What We're Working On** &nbsp;&nbsp;<sub>_Last updated: August 1st, 2026_</sub>
 
-| | Feature | Status |
-|:---:|---------|:------:|
-| 🧰 | **Remove** the `expand` parameter as CPU-side "hack" | ![Complete](https://img.shields.io/badge/Complete-16a34a?style=flat-square) |
-| 🎨 | Full Porter-Duff compositing and blend mode support | ![In Progress](https://img.shields.io/badge/In_Progress-f59e0b?style=flat-square) |
-| 🎭 | MSDF and procedurally-based `CompositeShape` masking | ![Complete](https://img.shields.io/badge/Complete-16a34a?style=flat-square) |
-| 🔧 | Improved Blend2D and NanoSVG feature support | ![Planned](https://img.shields.io/badge/Planned-6366f1?style=flat-square) |
+|     | Feature                                              |                                      Status                                       |
+| :-: | ---------------------------------------------------- | :-------------------------------------------------------------------------------: |
+| 🧰  | **Remove** the `expand` parameter as CPU-side "hack" |    ![Complete](https://img.shields.io/badge/Complete-16a34a?style=flat-square)    |
+| 🎨  | Full Porter-Duff compositing and blend mode support  | ![In Progress](https://img.shields.io/badge/In_Progress-f59e0b?style=flat-square) |
+| 🎭  | MSDF and procedurally-based `CompositeShape` masking |    ![Complete](https://img.shields.io/badge/Complete-16a34a?style=flat-square)    |
+| 🔧  | Improved Blend2D and NanoSVG feature support         |     ![Planned](https://img.shields.io/badge/Planned-6366f1?style=flat-square)     |
 
 </div>
 
@@ -48,7 +48,7 @@ https://github.com/user-attachments/assets/5ca6563e-a7d3-44df-9800-beb8716efcad
 `slughorn` is modern C++20 library implementing the recent OSS release of the
 "Slug" GPU vector graphics rendering technique by [Eric Lengyel](https://terathon.com/blog/).
 It makes no assumptions about what graphics environment is being used (OpenGL,
-Vulkan, WebGL, WebGPU, DirectX, etc) and instead focuses *only* on simplifying
+Vulkan, WebGL, WebGPU, DirectX, etc) and instead focuses _only_ on simplifying
 the process of creating/ingesting vector data from various backends--or,
 alternatively, by using an HTML "Canvas-like" API directly in code--so it can be
 directly uploaded to the GPU as easily as possible. A backend is simply an
@@ -72,10 +72,10 @@ intermediate library. As an **adapter**, it bridges existing vector ecosystems (
 Skia, Blend2D, NanoSVG, FreeType) into that same GPU-ready pipeline, letting you keep
 your current authoring workflow while gaining resolution-independent,
 perspective-correct GPU rendering. Most GPU vector renderers want to own the authoring;
-`slughorn` is being developed to support *bringing your own*.
+`slughorn` is being developed to support _bringing your own_.
 
 The divison is basically: `slughorn` is the "unified source of truth", providing
-data and hints/constraints about **how** that data is used; your *frontend*
+data and hints/constraints about **how** that data is used; your _frontend_
 decides what **do** with it.
 
 <div align="center">
@@ -102,7 +102,7 @@ Adding support for other backends is generally as easy as using a single helper
 class: `slughorn::CurveDecomposer`. If your vector data can be reduced into
 simple quadratic Bezier curves, `slughorn` can make it render.
 
-> Supporting *most* of the missing Skia/Cairo/Blend2D features (gradients,
+> Supporting _most_ of the missing Skia/Cairo/Blend2D features (gradients,
 > patterns, text, clipping/masking) is entirely **possible**, it just requires
 > time/effort. As slughorn continues to evolve, so will those backends.
 
@@ -293,7 +293,7 @@ dynamically in between.
 **Animated HUD**
 
 Every `Layer` instance within a `CompositeShape` can be individually accessed
-and dynamically modified. When using the *GL4/SSBO* path, updates only require
+and dynamically modified. When using the _GL4/SSBO_ path, updates only require
 changing a small subset of the total GPU memory.
 
 </td>
@@ -382,7 +382,7 @@ Slug is not restricted to simple quads; any 3D object or mesh can be assigned co
 SVG content fits easily within the `slughorn` ecosystem via the `slughorn/nanosvg.hpp`
 backend.
 
-*NOTE*: Some SVG features (strokes, text) are **possible**, but have not yet
+_NOTE_: Some SVG features (strokes, text) are **possible**, but have not yet
 been implemented.
 
 </td>
@@ -433,7 +433,7 @@ character `F` with a simple triangle, which fits seamlessly into the layout proc
 **Text Effects**
 
 Emphasizing that glyphs truly **are** "just another `Shape`", this example
-demonstrates using "inside" *and* "outside" coverage effects (using MSDF sidecar
+demonstrates using "inside" _and_ "outside" coverage effects (using MSDF sidecar
 data), stroking instead of filling, as well a using procedural GLSL to actively
 remove sections of a normal glyph fills!
 
@@ -504,7 +504,7 @@ Skia has two GPU backends: **Ganesh** (the older one, OpenGL/Vulkan/Metal) and
 2. Uploading those triangles to the GPU
 3. Rendering with relatively simple shaders
 
-The key word is *tessellation*; Skia converts your curves into triangle meshes.
+The key word is _tessellation_; Skia converts your curves into triangle meshes.
 This means:
 
 - Quality is **resolution-dependent**; you have to choose a tessellation
@@ -530,14 +530,14 @@ means:
 
 ### Comparison
 
-| | Skia GPU | Slug |
-|---|---|---|
-| Edge quality at scale | Depends on tolerance | Perfect always |
-| Perspective correctness | Approximate | Exact |
-| CPU work per frame | Re-tessellate on change | Nothing |
-| GPU fragment cost | Cheap (just triangles) | More expensive |
-| Setup complexity | High (full GPU framework) | Moderate |
-| OSG integration | Very difficult | Natural |
+|                         | Skia GPU                  | Slug           |
+| ----------------------- | ------------------------- | -------------- |
+| Edge quality at scale   | Depends on tolerance      | Perfect always |
+| Perspective correctness | Approximate               | Exact          |
+| CPU work per frame      | Re-tessellate on change   | Nothing        |
+| GPU fragment cost       | Cheap (just triangles)    | More expensive |
+| Setup complexity        | High (full GPU framework) | Moderate       |
+| OSG integration         | Very difficult            | Natural        |
 
 ### OSG Integration Specifically
 
