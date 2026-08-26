@@ -61,6 +61,14 @@ browser-only dependency baked in.
 
 - `third_party/slughorn` vendored via `git subtree` (squashed onto its own
   commit, `main` at the time of vendoring).
+- The subtree brought five gitlinks with it, at `third_party/slughorn/ext/`.
+  They are gone: CLAUDE.md blocklists submodules, none of the five was ever
+  initialised, and the core `slughorn` target does not want them. Each sits
+  behind an option that defaults off -- `SLUGHORN_SERIAL` needs `ext/json`,
+  `SLUGHORN_NANOSVG` needs `ext/nanosvg`, `SLUGHORN_MSDF` needs `ext/msdfgen`.
+  Turning one on means supplying that directory, and SlugHorn's own CMake will
+  still tell you to run `git submodule update`, which this tree has nothing for.
+  A `<project>` in the goal manifest is how it would come back.
 - SlugHorn's core `slughorn` CMake target builds clean under Emscripten
   6.0.6 (`prototype/slughorn-wasm-harness/`), confirmed by inspecting the
   compiled object: a genuine `WebAssembly (wasm) binary version 0x1`.
