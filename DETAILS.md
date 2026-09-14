@@ -152,6 +152,7 @@ REQUIRED)`, which does not resolve against Emscripten's
   Not built this session; recorded here so the next session starts
   from the real gap, not from the standalone canvas as if it were
   the finish line.
+
 - **The Godot GDExtension binding.** Deferred this session by explicit
   request ("don't touch Godot"). SlugHorn's core is the same C++20 code
   either way; the Godot path swaps the Emscripten binding for a
