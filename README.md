@@ -12,4 +12,4 @@ Each WebAssembly prototype carries its own build script and a page that loads it
 
 ## Licence
 
-This repository states no licence of its own. The vendored slughorn is MIT.
+MIT. See [LICENSE](LICENSE). The vendored slughorn is MIT.
