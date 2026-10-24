@@ -1,4 +1,4 @@
-// RFD 0074: batched WASM binding over SlugHorn's core Atlas.
+// RFD66606-0074: batched WASM binding over SlugHorn's core Atlas.
 //
 // The single-shape POC (../slughorn-wasm-poc/binding.cpp) proved the
 // pipeline; this proves the next documented milestone, multi-shape

@@ -1,4 +1,4 @@
-# RFD 0074 prototype: batched SlugHorn shapes, one draw call
+# RFD66606-0074 prototype: batched SlugHorn shapes, one draw call
 
 Proves the next milestone `../slughorn-wasm-poc/README.md` named as not yet
 covered: "Layer/composite batching for multiple shapes ... a real

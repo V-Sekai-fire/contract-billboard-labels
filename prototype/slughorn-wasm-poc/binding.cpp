@@ -1,4 +1,4 @@
-// RFD 0074 prototype: thin WASM binding over SlugHorn's core Atlas.
+// RFD66606-0074 prototype: thin WASM binding over SlugHorn's core Atlas.
 //
 // No FreeType yet -- that is the next milestone (real glyph outlines from a
 // font file). This binding hand-authors one shape, a five-point star, as a

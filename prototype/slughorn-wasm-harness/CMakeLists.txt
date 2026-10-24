@@ -1,4 +1,4 @@
-# RFD 0074 prototype harness: build SlugHorn's core static library against
+# RFD66606-0074 prototype harness: build SlugHorn's core static library against
 # the Emscripten toolchain, as a subdirectory (not standalone), so its
 # CMakeLists.txt does not auto-configure the pybind11 Python bindings that
 # only apply when SlugHorn is the top-level project.
