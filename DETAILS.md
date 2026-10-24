@@ -1,4 +1,4 @@
-# RFD 0074 details: what SlugHorn actually is, and the smaller path beside it
+# RFD66606-0074 details: what SlugHorn actually is, and the smaller path beside it
 
 ## What SlugHorn is, read from its own repository
 
@@ -47,7 +47,7 @@ and no change to the USD stage itself.
 The visible difference: SlugHorn's text would render inside the
 WebGL scene itself, correctly occluded by 3D geometry in front of
 it. The HTML overlay always draws on top, never occluded. For a flat
-billboard card with nothing in front of it, RFD 0073's actual scene
+billboard card with nothing in front of it, RFD66606-0073's actual scene
 today, that difference does not show.
 
 ## Update: SlugHorn/WASM prototyped and working

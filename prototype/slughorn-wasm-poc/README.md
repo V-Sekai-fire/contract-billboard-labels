@@ -1,4 +1,4 @@
-# RFD 0074 prototype: SlugHorn → WASM → real Slug shader
+# RFD66606-0074 prototype: SlugHorn → WASM → real Slug shader
 
 Proves the path DETAILS.md scoped as "real work, not a small addition":
 SlugHorn's C++20 core compiles to WASM, and its curve/band texture output

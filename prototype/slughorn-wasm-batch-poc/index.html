@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>RFD 0074 — SlugHorn / WASM Slug-shader batch POC</title>
+<title>RFD66606-0074 — SlugHorn / WASM Slug-shader batch POC</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   html,body{ height:100%; margin:0; background:#0b0d12; color:#e7e9ee; font-family:-apple-system,"Segoe UI",Arial,sans-serif; overflow:hidden; }
@@ -23,7 +23,7 @@
 <body>
 <canvas id="gl"></canvas>
 <div class="hud">
-  <h1>RFD 0074 — SlugHorn Slug shader, batched, one draw call</h1>
+  <h1>RFD66606-0074 — SlugHorn Slug shader, batched, one draw call</h1>
   <p>Six distinct shapes (5 to 10 points each), one shared Atlas, one interleaved vertex buffer, one <code>drawElements</code> call — the attribute-per-instance layout SlugHorn's own GLFW example uses, ported here in place of the single-shape POC's per-shape uniforms.</p>
   <div class="row"><input type="checkbox" id="occluder" checked><label for="occluder">Occluder panel in front of the row</label></div>
   <div class="row"><input type="checkbox" id="autoRotate" checked><label for="autoRotate">Auto-rotate</label></div>
